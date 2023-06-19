@@ -1,0 +1,529 @@
+3num_seq = 1
+file name: dataset-MH01_stereoi
+Loading images for sequence 0...LOADED!
+Loading IMU for sequence 0...LOADED!
+
+-------
+
+ORB-SLAM3 Copyright (C) 2017-2020 Carlos Campos, Richard Elvira, Juan J. Gómez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
+ORB-SLAM2 Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
+This program comes with ABSOLUTELY NO WARRANTY;
+This is free software, and you are welcome to redistribute it
+under certain conditions. See LICENSE.txt.
+
+Input sensor was set to: Stereo-Inertial
+
+Loading ORB Vocabulary. This could take a while...
+Vocabulary loaded!
+
+Creation of new map with id: 0
+Creation of new map with last KF id: 0
+Seq. Name: 
+
+[Tracking//Tracking()]
+--->>---
+
+
+
+Camera Parameters: 
+- Camera: Pinhole
+- fx: 435.20468139648438
+- fy: 435.20468139648438
+- cx: 367.45172119140625
+- cy: 252.20085144042969
+- k1: 0
+- k2: 0
+- p1: 0
+- p2: 0
+- fps: 20
+- color order: RGB (ignored if grayscale)
+
+Depth Threshold (Close/Far Points): 3.8527247905731201
+
+ORB Extractor Parameters: 
+- Number of Features: 1200
+- Scale Levels: 8
+- Scale Factor: 1.2000000476837158
+- Initial Fast Threshold: 20
+- Minimum Fast Threshold: 7
+
+Left camera to Imu Transform (Tbc): 
+[0.014865543, -0.99988091, 0.004140297, -0.021640146;
+ 0.99955726, 0.014967213, 0.02571553, -0.064676985;
+ -0.025774436, 0.0037561883, 0.99966073, 0.0098107308;
+ 0, 0, 0, 1]
+
+IMU frequency: 200 Hz
+IMU gyro noise: 0.00016999999934341758 rad/s/sqrt(Hz)
+IMU gyro walk: 1.9392999092815444e-05 rad/s^2/sqrt(Hz)
+IMU accelerometer noise: 0.0020000000949949026 m/s^2/sqrt(Hz)
+IMU accelerometer walk: 0.0030000000260770321 m/s^3/sqrt(Hz)
+
+[Tracking::Track()]
+--->>---
+
+
+not IMU meas
+
+[Tracking::Track()]
+--->>---
+
+
+not IMU meas
+
+[Tracking::Track()]
+--->>---
+
+
+not enough acceleration
+
+[Tracking::Track()]
+--->>---
+
+
+not enough acceleration
+
+[Tracking::Track()]
+--->>---
+
+
+First KF:0; Map init KF:0
+New Map created with 514 points
+
+[Tracking::Track()]
+--->>---
+
+
+If we have an initial estimation of the camera pose and matching. Track the local map.
+> MODE: !onlyTracking... OK
+
+[Tracking::TrackLocalMap]
+--->>---
+
+
+UpdateLocalMap()
+--->>---
+
+
+
+[Tracking::UpdateLocalMap()]
+--->>---
+
+
+ 1) UpdateLocalKeyFrames 2) UpdateLocalPoints 
+
+[Tracking::UpdateLocalKeyFrames()]
+--->>---
+
+
+If IMU in Atlas is not initialized or current frame's ID is less than lastRelocFrameID+2
+   For all map points(1207) in current frame, KeyframeCounter++
+Clear mvpLocalKeyFrames & Reserve mvpLocalKeyFrames by 3 times keyframeCounter's size.
+All keyframes that observe a map point are included in the local map. Also check which keyframe shares most points
+   : For all keyframeCounters (pKF), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+Include also some not-already-included keyframes that are neighbors to already-included keyframes
+   1. For all mvpLocalKeyFrames (pKF), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+   2. For all pKF's childs (pChildKF), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+   3. For all pKF's parent (pParent), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+Add 10 last temporal KFs (mainly for IMU): if IMU is used && mvpLocalKeyFrames.size < 80
+   For previous frames up to the 20th of the current frame, (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+Set [currentFrame's referenceKF] as [pKFmax]
+
+[End of Tracking::UpdateLocalKeyFrames()]
+
+[Tracking::UpdateLocalPoints]
+--->>---
+
+
+For all mvpLocalKeyFrames' keyframe, get map points matches (vpMPs) 
+   For all vpMPs(pMP), (1) push it into mvpLocalMapPoints (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId]
+
+[End of Tracking::UpdateLocalPoints]
+SearchLocalPoints()
+--->>---
+
+
+
+[Tracking::SearchLocalPoints]
+--->>---
+
+
+Do not search map points already matched
+   : For all mvpMapPoints(pMP), (1) IncreaseVisible (2) set [mnLastFrameSeen] as [mCurrentFrame.mnId] (3) set [mbTrackInView, mbTrackInViewR] as [false, false]
+Project points in frame and check its visibility
+   > For all mvpLocalMapPoints(pMP),
+      > If mCurrentFrame.isInFrustum(pMP,0.5): pMP->IncreaseVisible()
+      > If pMP->mbTrackInView: add (mTrackProjX, mTrackProjY) into mmProjectPoints
+nToMatch=319: Create ORB matcher matcher(0.8)
+Search by projection (mCurrentFrame, mvpLocalMapPoints) using th=5
+
+[End of Tracking::SearchLocalPoints]
+Fail to track local map!
+Save frame & Reset 
+TrackLocalMap completed successfully.
+Save frame if recent relocalization, since they are used for IMU reset (as we are making copy, it shluld be once mCurrFrame is completely modified)
+Update model & Clean, Delete
+If bOK or RECENTLY_LOST, Update motion model => mVelocity
+Clean VO matches: For all map points in current frame (pMP), set mvbOutlier, mvpMapPoints as false and NULL, respectively.
+Delete temporal MapPoints: For all mlpTemporalPoints(pMP), delete it.
+
+[Tracking::NeedNewKeyFrame]
+--->>---
+
+
+If IMU is used and initialized
+timestamp interval < 0.25
+Check if we need to insert a new keyframe
+
+[Tracking::Track()]
+--->>---
+
+
+If we have an initial estimation of the camera pose and matching. Track the local map.
+> MODE: !onlyTracking... OK
+
+[Tracking::TrackLocalMap]
+--->>---
+
+
+UpdateLocalMap()
+--->>---
+
+
+
+[Tracking::UpdateLocalMap()]
+--->>---
+
+
+ 1) UpdateLocalKeyFrames 2) UpdateLocalPoints 
+
+[Tracking::UpdateLocalKeyFrames()]
+--->>---
+
+
+If IMU in Atlas is not initialized or current frame's ID is less than lastRelocFrameID+2
+   For all map points(1204) in current frame, KeyframeCounter++
+Clear mvpLocalKeyFrames & Reserve mvpLocalKeyFrames by 3 times keyframeCounter's size.
+All keyframes that observe a map point are included in the local map. Also check which keyframe shares most points
+   : For all keyframeCounters (pKF), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+Include also some not-already-included keyframes that are neighbors to already-included keyframes
+   1. For all mvpLocalKeyFrames (pKF), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+   2. For all pKF's childs (pChildKF), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+   3. For all pKF's parent (pParent), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+Add 10 last temporal KFs (mainly for IMU): if IMU is used && mvpLocalKeyFrames.size < 80
+   For previous frames up to the 20th of the current frame, (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+Set [currentFrame's referenceKF] as [pKFmax]
+
+[End of Tracking::UpdateLocalKeyFrames()]
+
+[Tracking::UpdateLocalPoints]
+--->>---
+
+
+For all mvpLocalKeyFrames' keyframe, get map points matches (vpMPs) 
+   For all vpMPs(pMP), (1) push it into mvpLocalMapPoints (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId]
+
+[End of Tracking::UpdateLocalPoints]
+SearchLocalPoints()
+--->>---
+
+
+
+[Tracking::SearchLocalPoints]
+--->>---
+
+
+Do not search map points already matched
+   : For all mvpMapPoints(pMP), (1) IncreaseVisible (2) set [mnLastFrameSeen] as [mCurrentFrame.mnId] (3) set [mbTrackInView, mbTrackInViewR] as [false, false]
+Project points in frame and check its visibility
+   > For all mvpLocalMapPoints(pMP),
+      > If mCurrentFrame.isInFrustum(pMP,0.5): pMP->IncreaseVisible()
+      > If pMP->mbTrackInView: add (mTrackProjX, mTrackProjY) into mmProjectPoints
+nToMatch=290: Create ORB matcher matcher(0.8)
+Search by projection (mCurrentFrame, mvpLocalMapPoints) using th=10
+
+[End of Tracking::SearchLocalPoints]
+Fail to track local map!
+Save frame & Reset 
+TrackLocalMap completed successfully.
+Save frame if recent relocalization, since they are used for IMU reset (as we are making copy, it shluld be once mCurrFrame is completely modified)
+Update model & Clean, Delete
+If bOK or RECENTLY_LOST, Update motion model => mVelocity
+Clean VO matches: For all map points in current frame (pMP), set mvbOutlier, mvpMapPoints as false and NULL, respectively.
+Delete temporal MapPoints: For all mlpTemporalPoints(pMP), delete it.
+
+[Tracking::NeedNewKeyFrame]
+--->>---
+
+
+If IMU is used and initialized
+timestamp interval < 0.25
+Check if we need to insert a new keyframe
+
+[Tracking::Track()]
+--->>---
+
+
+If we have an initial estimation of the camera pose and matching. Track the local map.
+> MODE: !onlyTracking... OK
+
+[Tracking::TrackLocalMap]
+--->>---
+
+
+UpdateLocalMap()
+--->>---
+
+
+
+[Tracking::UpdateLocalMap()]
+--->>---
+
+
+ 1) UpdateLocalKeyFrames 2) UpdateLocalPoints 
+
+[Tracking::UpdateLocalKeyFrames()]
+--->>---
+
+
+If IMU in Atlas is not initialized or current frame's ID is less than lastRelocFrameID+2
+   For all map points(1210) in current frame, KeyframeCounter++
+Clear mvpLocalKeyFrames & Reserve mvpLocalKeyFrames by 3 times keyframeCounter's size.
+All keyframes that observe a map point are included in the local map. Also check which keyframe shares most points
+   : For all keyframeCounters (pKF), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+Include also some not-already-included keyframes that are neighbors to already-included keyframes
+   1. For all mvpLocalKeyFrames (pKF), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+   2. For all pKF's childs (pChildKF), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+   3. For all pKF's parent (pParent), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+Add 10 last temporal KFs (mainly for IMU): if IMU is used && mvpLocalKeyFrames.size < 80
+   For previous frames up to the 20th of the current frame, (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+Set [currentFrame's referenceKF] as [pKFmax]
+
+[End of Tracking::UpdateLocalKeyFrames()]
+
+[Tracking::UpdateLocalPoints]
+--->>---
+
+
+For all mvpLocalKeyFrames' keyframe, get map points matches (vpMPs) 
+   For all vpMPs(pMP), (1) push it into mvpLocalMapPoints (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId]
+
+[End of Tracking::UpdateLocalPoints]
+SearchLocalPoints()
+--->>---
+
+
+
+[Tracking::SearchLocalPoints]
+--->>---
+
+
+Do not search map points already matched
+   : For all mvpMapPoints(pMP), (1) IncreaseVisible (2) set [mnLastFrameSeen] as [mCurrentFrame.mnId] (3) set [mbTrackInView, mbTrackInViewR] as [false, false]
+Project points in frame and check its visibility
+   > For all mvpLocalMapPoints(pMP),
+      > If mCurrentFrame.isInFrustum(pMP,0.5): pMP->IncreaseVisible()
+      > If pMP->mbTrackInView: add (mTrackProjX, mTrackProjY) into mmProjectPoints
+nToMatch=311: Create ORB matcher matcher(0.8)
+Search by projection (mCurrentFrame, mvpLocalMapPoints) using th=10
+
+[End of Tracking::SearchLocalPoints]
+Fail to track local map!
+Save frame & Reset 
+TrackLocalMap completed successfully.
+Save frame if recent relocalization, since they are used for IMU reset (as we are making copy, it shluld be once mCurrFrame is completely modified)
+Update model & Clean, Delete
+If bOK or RECENTLY_LOST, Update motion model => mVelocity
+Clean VO matches: For all map points in current frame (pMP), set mvbOutlier, mvpMapPoints as false and NULL, respectively.
+Delete temporal MapPoints: For all mlpTemporalPoints(pMP), delete it.
+
+[Tracking::NeedNewKeyFrame]
+--->>---
+
+
+If IMU is used and initialized
+timestamp interval < 0.25
+Check if we need to insert a new keyframe
+
+[Tracking::Track()]
+--->>---
+
+
+If we have an initial estimation of the camera pose and matching. Track the local map.
+> MODE: !onlyTracking... OK
+
+[Tracking::TrackLocalMap]
+--->>---
+
+
+UpdateLocalMap()
+--->>---
+
+
+
+[Tracking::UpdateLocalMap()]
+--->>---
+
+
+ 1) UpdateLocalKeyFrames 2) UpdateLocalPoints 
+
+[Tracking::UpdateLocalKeyFrames()]
+--->>---
+
+
+If IMU in Atlas is not initialized or current frame's ID is less than lastRelocFrameID+2
+   For all map points(1209) in current frame, KeyframeCounter++
+Clear mvpLocalKeyFrames & Reserve mvpLocalKeyFrames by 3 times keyframeCounter's size.
+All keyframes that observe a map point are included in the local map. Also check which keyframe shares most points
+   : For all keyframeCounters (pKF), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+Include also some not-already-included keyframes that are neighbors to already-included keyframes
+   1. For all mvpLocalKeyFrames (pKF), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+   2. For all pKF's childs (pChildKF), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+   3. For all pKF's parent (pParent), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+Add 10 last temporal KFs (mainly for IMU): if IMU is used && mvpLocalKeyFrames.size < 80
+   For previous frames up to the 20th of the current frame, (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+Set [currentFrame's referenceKF] as [pKFmax]
+
+[End of Tracking::UpdateLocalKeyFrames()]
+
+[Tracking::UpdateLocalPoints]
+--->>---
+
+
+For all mvpLocalKeyFrames' keyframe, get map points matches (vpMPs) 
+   For all vpMPs(pMP), (1) push it into mvpLocalMapPoints (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId]
+
+[End of Tracking::UpdateLocalPoints]
+SearchLocalPoints()
+--->>---
+
+
+
+[Tracking::SearchLocalPoints]
+--->>---
+
+
+Do not search map points already matched
+   : For all mvpMapPoints(pMP), (1) IncreaseVisible (2) set [mnLastFrameSeen] as [mCurrentFrame.mnId] (3) set [mbTrackInView, mbTrackInViewR] as [false, false]
+Project points in frame and check its visibility
+   > For all mvpLocalMapPoints(pMP),
+      > If mCurrentFrame.isInFrustum(pMP,0.5): pMP->IncreaseVisible()
+      > If pMP->mbTrackInView: add (mTrackProjX, mTrackProjY) into mmProjectPoints
+nToMatch=342: Create ORB matcher matcher(0.8)
+Search by projection (mCurrentFrame, mvpLocalMapPoints) using th=10
+
+[End of Tracking::SearchLocalPoints]
+Fail to track local map!
+Save frame & Reset 
+TrackLocalMap completed successfully.
+Save frame if recent relocalization, since they are used for IMU reset (as we are making copy, it shluld be once mCurrFrame is completely modified)
+Update model & Clean, Delete
+If bOK or RECENTLY_LOST, Update motion model => mVelocity
+Clean VO matches: For all map points in current frame (pMP), set mvbOutlier, mvpMapPoints as false and NULL, respectively.
+Delete temporal MapPoints: For all mlpTemporalPoints(pMP), delete it.
+
+[Tracking::NeedNewKeyFrame]
+--->>---
+
+
+If IMU is used and initialized
+timestamp interval < 0.25
+Check if we need to insert a new keyframe
+
+[Tracking::Track()]
+--->>---
+
+
+If we have an initial estimation of the camera pose and matching. Track the local map.
+> MODE: !onlyTracking... OK
+
+[Tracking::TrackLocalMap]
+--->>---
+
+
+UpdateLocalMap()
+--->>---
+
+
+
+[Tracking::UpdateLocalMap()]
+--->>---
+
+
+ 1) UpdateLocalKeyFrames 2) UpdateLocalPoints 
+
+[Tracking::UpdateLocalKeyFrames()]
+--->>---
+
+
+If IMU in Atlas is not initialized or current frame's ID is less than lastRelocFrameID+2
+   For all map points(1202) in current frame, KeyframeCounter++
+Clear mvpLocalKeyFrames & Reserve mvpLocalKeyFrames by 3 times keyframeCounter's size.
+All keyframes that observe a map point are included in the local map. Also check which keyframe shares most points
+   : For all keyframeCounters (pKF), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+Include also some not-already-included keyframes that are neighbors to already-included keyframes
+   1. For all mvpLocalKeyFrames (pKF), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+   2. For all pKF's childs (pChildKF), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+   3. For all pKF's parent (pParent), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+Add 10 last temporal KFs (mainly for IMU): if IMU is used && mvpLocalKeyFrames.size < 80
+   For previous frames up to the 20th of the current frame, (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] 
+Set [currentFrame's referenceKF] as [pKFmax]
+
+[End of Tracking::UpdateLocalKeyFrames()]
+
+[Tracking::UpdateLocalPoints]
+--->>---
+
+
+For all mvpLocalKeyFrames' keyframe, get map points matches (vpMPs) 
+   For all vpMPs(pMP), (1) push it into mvpLocalMapPoints (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId]
+
+[End of Tracking::UpdateLocalPoints]
+SearchLocalPoints()
+--->>---
+
+
+
+[Tracking::SearchLocalPoints]
+--->>---
+
+
+Do not search map points already matched
+   : For all mvpMapPoints(pMP), (1) IncreaseVisible (2) set [mnLastFrameSeen] as [mCurrentFrame.mnId] (3) set [mbTrackInView, mbTrackInViewR] as [false, false]
+Project points in frame and check its visibility
+   > For all mvpLocalMapPoints(pMP),
+      > If mCurrentFrame.isInFrustum(pMP,0.5): pMP->IncreaseVisible()
+      > If pMP->mbTrackInView: add (mTrackProjX, mTrackProjY) into mmProjectPoints
+nToMatch=358: Create ORB matcher matcher(0.8)
+Search by projection (mCurrentFrame, mvpLocalMapPoints) using th=10
+
+[End of Tracking::SearchLocalPoints]
+Fail to track local map!
+Save frame & Reset 
+TrackLocalMap completed successfully.
+Save frame if recent relocalization, since they are used for IMU reset (as we are making copy, it shluld be once mCurrFrame is completely modified)
+Update model & Clean, Delete
+If bOK or RECENTLY_LOST, Update motion model => mVelocity
+Clean VO matches: For all map points in current frame (pMP), set mvbOutlier, mvpMapPoints as false and NULL, respectively.
+Delete temporal MapPoints: For all mlpTemporalPoints(pMP), delete it.
+
+[Tracking::NeedNewKeyFrame]
+--->>---
+
+
+If IMU is used and initialized
+stereo && timestamp interval >= 0.25
+Check if we need to insert a new keyframe
+
+[Tracking::CreateNewKeyFrame]
+--->>---
+
+
+Create new KeyFrame (pKF)
+If IMU Stereo, Update pose matrices
+mpLocalMapper->InsertKeyFrame(pKF)
+
+[End of Tracking::CreateNewKeyFrame()]
+
+[Tracking::Track()]
+--->>---

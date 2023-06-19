@@ -37,6 +37,8 @@
 #include <include/CameraModels/KannalaBrandt8.h>
 #include <include/MLPnPsolver.h>
 
+#include <Logger.h>
+
 using namespace std;
 
 namespace ORB_SLAM3
@@ -50,6 +52,10 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpAtlas(pAtlas), mnLastRelocFrameId(0), time_recently_lost(5.0), time_recently_lost_visual(2.0),
     mnInitialFrameId(0), mbCreatedMap(false), mnFirstFrameId(0), mpCamera2(nullptr)
 {
+    // ORB_SLAM3::logger.log_loc("Tracking//Tracking()");
+    // ORB_SLAM3::logger.bp({3});
+    logger.log_loc("Tracking//Tracking()", {3});
+    logger.bp({3});
     // Load camera parameters from settings file
     cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
 
@@ -1656,7 +1662,8 @@ void Tracking::ComputeVelocitiesAccBias(const vector<Frame*> &vpFs, float &bax, 
 
 void Tracking::Track()
 {
-
+    logger.log_loc("Tracking::Track()", {3});
+    logger.bp({3});
     if (bStepByStep)
     {
         while(!mbStep)
@@ -1975,15 +1982,19 @@ void Tracking::Track()
         std::chrono::steady_clock::time_point time_StartLMTrack = std::chrono::steady_clock::now();
 #endif
         // If we have an initial estimation of the camera pose and matching. Track the local map.
+        logger.log_str("If we have an initial estimation of the camera pose and matching. Track the local map.", {3});
         if(!mbOnlyTracking)
         {
             if(bOK)
             {
+                logger.log_str("> MODE: !onlyTracking... OK", {3});
                 bOK = TrackLocalMap();
 
             }
-            if(!bOK)
+            if(!bOK){
+                logger.log_str("> MODE: not onlyTracking... not OK", {3});
                 cout << "Fail to track local map!" << endl;
+            }
         }
         else
         {
@@ -1991,13 +2002,17 @@ void Tracking::Track()
             // a local map and therefore we do not perform TrackLocalMap(). Once the system relocalizes
             // the camera we will use the local map again.
             if(bOK && !mbVO)
+                logger.log_str("> MODE: onlyTracking... OK and !VO", {3});
                 bOK = TrackLocalMap();
         }
 
-        if(bOK)
+        if(bOK){
+            logger.log_str("Save frame & Reset... TrackLocalMap completed successfully.", {3});
             mState = OK;
+        }
         else if (mState == OK)
         {
+            logger.log_str("Fail to TrackLocalMap. set mState to RECENTLY_LOST", {3});
             if (mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO)
             {
                 Verbose::PrintMess("Track lost for less than one second...", Verbose::VERBOSITY_NORMAL);
@@ -2019,8 +2034,10 @@ void Tracking::Track()
         }
 
         // Save frame if recent relocalization, since they are used for IMU reset (as we are making copy, it shluld be once mCurrFrame is completely modified)
+        logger.log_str("Save frame if recent relocalization, since they are used for IMU reset (as we are making copy, it shluld be once mCurrFrame is completely modified)", {3});
         if((mCurrentFrame.mnId<(mnLastRelocFrameId+mnFramesToResetIMU)) && (mCurrentFrame.mnId > mnFramesToResetIMU) && ((mSensor == System::IMU_MONOCULAR) || (mSensor == System::IMU_STEREO)) && pCurrentMap->isImuInitialized())
         {
+            logger.log_str("If IMU is used and initialized && mnFramesToResetIMU < mnId < mnLastRelocFrameId+mnFramesToResetIMU", {3});
             // TODO check this situation
             Verbose::PrintMess("Saving pointer to frame. imu needs reset...", Verbose::VERBOSITY_NORMAL);
             Frame* pF = new Frame(mCurrentFrame);
@@ -2032,8 +2049,10 @@ void Tracking::Track()
 
         if(pCurrentMap->isImuInitialized())
         {
+            logger.log_str("If IMU is initialized", {3});
             if(bOK)
             {
+                logger.log_str("If bOK(=TrackLocalMap success)", {3});
                 if(mCurrentFrame.mnId==(mnLastRelocFrameId+mnFramesToResetIMU))
                 {
                     cout << "RESETING FRAME!!!" << endl;
@@ -2055,8 +2074,10 @@ void Tracking::Track()
         if(!mCurrentFrame.mTcw.empty())
             mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw);
 
+        logger.log_str("Update model & Clean, Delete", {3});
         if(bOK || mState==RECENTLY_LOST)
         {
+            logger.log_str("If bOK or RECENTLY_LOST, Update motion model => mVelocity", {3});
             // Update motion model
             if(!mLastFrame.mTcw.empty() && !mCurrentFrame.mTcw.empty())
             {
@@ -2072,6 +2093,7 @@ void Tracking::Track()
                 mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw);
 
             // Clean VO matches
+            logger.log_str("Clean VO matches: For all map points in current frame (pMP), set mvbOutlier, mvpMapPoints as false and NULL, respectively.", {3});
             for(int i=0; i<mCurrentFrame.N; i++)
             {
                 MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
@@ -2084,6 +2106,7 @@ void Tracking::Track()
             }
 
             // Delete temporal MapPoints
+            logger.log_str("Delete temporal MapPoints: For all mlpTemporalPoints(pMP), delete it.", {3});
             for(list<MapPoint*>::iterator lit = mlpTemporalPoints.begin(), lend =  mlpTemporalPoints.end(); lit!=lend; lit++)
             {
                 MapPoint* pMP = *lit;
@@ -2094,12 +2117,14 @@ void Tracking::Track()
 #ifdef REGISTER_TIMES
             std::chrono::steady_clock::time_point time_StartNewKF = std::chrono::steady_clock::now();
 #endif
+            logger.bp({3});
             bool bNeedKF = NeedNewKeyFrame();
 
 
 
 
             // Check if we need to insert a new keyframe
+            logger.log_str("Check if we need to insert a new keyframe", {3});
             if(bNeedKF && (bOK|| (mState==RECENTLY_LOST && (mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO))))
                 CreateNewKeyFrame();
 
@@ -2121,6 +2146,8 @@ void Tracking::Track()
             }
         }
 
+        logger.log_str("Reset if the camera get lost soon after initialization", {3});
+        logger.bp({3});
         // Reset if the camera get lost soon after initialization
         if(mState==LOST)
         {
@@ -2148,12 +2175,13 @@ void Tracking::Track()
 
 
 
-
     if(mState==OK || mState==RECENTLY_LOST)
     {
+        logger.log_str("Save frame pose information if mState==OK or RECENTLY_LOST", {3});
         // Store frame pose information to retrieve the complete camera trajectory afterwards.
         if(!mCurrentFrame.mTcw.empty())
         {
+            logger.log_str("If mCurrentFrame.mTcw is not empty(): store mpReferenceKF's information", {3});
             cv::Mat Tcr = mCurrentFrame.mTcw*mCurrentFrame.mpReferenceKF->GetPoseInverse();
             mlRelativeFramePoses.push_back(Tcr);
             mlpReferences.push_back(mCurrentFrame.mpReferenceKF);
@@ -2162,6 +2190,7 @@ void Tracking::Track()
         }
         else
         {
+            logger.log_str("If tracking is lost, which means mCurrentFrame.mTcw is empty(): store privious information", {3});
             // This can happen if tracking is lost
             mlRelativeFramePoses.push_back(mlRelativeFramePoses.back());
             mlpReferences.push_back(mlpReferences.back());
@@ -2170,6 +2199,8 @@ void Tracking::Track()
         }
 
     }
+
+    logger.log_loc("End of Tracking::Track()", {3});
 }
 
 
@@ -2510,6 +2541,8 @@ void Tracking::CreateInitialMapMonocular()
 
 void Tracking::CreateMapInAtlas()
 {
+    logger.log_loc("Tracking::CreateMapInAtlas()", {3});
+    logger.bp({3});
     mnLastInitFrameId = mCurrentFrame.mnId;
     mpAtlas->CreateNewMap();
     if (mSensor==System::IMU_STEREO || mSensor == System::IMU_MONOCULAR)
@@ -2548,6 +2581,7 @@ void Tracking::CreateMapInAtlas()
     mvIniMatches.clear();
 
     mbCreatedMap = true;
+    logger.log_loc("End of Tracking::CreateMapInAtlas()", {3});
 
 }
 
@@ -2794,7 +2828,8 @@ bool Tracking::TrackWithMotionModel()
 
 bool Tracking::TrackLocalMap()
 {
-
+    logger.log_loc("Tracking::TrackLocalMap", {3});
+    logger.bp({3});
     // We have an estimation of the camera pose and some map points tracked in the frame.
     // We retrieve the local map and try to find matches to points in the local map.
     mTrackedFr++;
@@ -2802,6 +2837,8 @@ bool Tracking::TrackLocalMap()
 #ifdef REGISTER_TIMES
     std::chrono::steady_clock::time_point time_StartLMUpdate = std::chrono::steady_clock::now();
 #endif
+    logger.log_str("UpdateLocalMap()", {3});
+    logger.bp({3});
     UpdateLocalMap();
 #ifdef REGISTER_TIMES
     std::chrono::steady_clock::time_point time_StartSearchLP = std::chrono::steady_clock::now();
@@ -2809,7 +2846,8 @@ bool Tracking::TrackLocalMap()
     double timeUpdatedLM_ms = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(time_StartSearchLP - time_StartLMUpdate).count();
     vdUpdatedLM_ms.push_back(timeUpdatedLM_ms);
 #endif
-
+    logger.log_str("SearchLocalPoints()", {3});
+    logger.bp({3});
     SearchLocalPoints();
 #ifdef REGISTER_TIMES
     std::chrono::steady_clock::time_point time_StartPoseOpt = std::chrono::steady_clock::now();
@@ -2933,14 +2971,23 @@ bool Tracking::TrackLocalMap()
 
 bool Tracking::NeedNewKeyFrame()
 {
+    logger.log_loc("Tracking::NeedNewKeyFrame", {3});
+    logger.bp({3});
     if(((mSensor == System::IMU_MONOCULAR) || (mSensor == System::IMU_STEREO)) && !mpAtlas->GetCurrentMap()->isImuInitialized())
     {
-        if (mSensor == System::IMU_MONOCULAR && (mCurrentFrame.mTimeStamp-mpLastKeyFrame->mTimeStamp)>=0.25)
+        logger.log_str("If IMU is used and initialized", {3});
+        if (mSensor == System::IMU_MONOCULAR && (mCurrentFrame.mTimeStamp-mpLastKeyFrame->mTimeStamp)>=0.25){
+            logger.log_str("monocular && timestamp interval >= 0.25", {3});
             return true;
-        else if (mSensor == System::IMU_STEREO && (mCurrentFrame.mTimeStamp-mpLastKeyFrame->mTimeStamp)>=0.25)
+        }
+        else if (mSensor == System::IMU_STEREO && (mCurrentFrame.mTimeStamp-mpLastKeyFrame->mTimeStamp)>=0.25){
+            logger.log_str("stereo && timestamp interval >= 0.25", {3});
             return true;
-        else
+        }
+        else{
+            logger.log_str("timestamp interval < 0.25", {3});
             return false;
+        }
     }
 
     if(mbOnlyTracking)
@@ -2970,7 +3017,8 @@ bool Tracking::NeedNewKeyFrame()
     int nRefMatches = mpReferenceKF->TrackedMapPoints(nMinObs);
 
     // Local Mapping accept keyframes?
-    bool bLocalMappingIdle = mpLocalMapper->AcceptKeyFrames();
+    logger.log_str("Local Mapping accept keyframes?", {3});
+    bool bLocalMappingIdle = mpLocalMapper->AcceptKeyFrames(); // return mbAcceptKeyFrames
 
     // Check how many "close" points are being tracked and how many could be potentially created.
     int nNonTrackedClose = 0;
@@ -3012,6 +3060,7 @@ bool Tracking::NeedNewKeyFrame()
         else
             thRefRatio = 0.90f;
     }
+    logger.log_str("thRefRatio="+to_string(thRefRatio), {3});
 
     // Condition 1a: More than "MaxFrames" have passed from last keyframe insertion
     const bool c1a = mCurrentFrame.mnId>=mnLastKeyFrameId+mMaxFrames;
@@ -3044,6 +3093,7 @@ bool Tracking::NeedNewKeyFrame()
     else
         c4=false;
 
+    logger.log_str("c1a="+to_string(c1a)+", c1b="+to_string(c1b)+", clc="+to_string(c1c)+", c2="+to_string(c2)+", c3="+to_string(c3)+", c4="+to_string(c4), {3});
     if(((c1a||c1b||c1c) && c2)||c3 ||c4)
     {
         // If the mapping accepts keyframes, insert keyframe.
@@ -3054,13 +3104,18 @@ bool Tracking::NeedNewKeyFrame()
         }
         else
         {
+            logger.log_str("If not +to_string(c4): mpLocalMapper->InterruptBA", {3});
             mpLocalMapper->InterruptBA();
             if(mSensor!=System::MONOCULAR  && mSensor!=System::IMU_MONOCULAR)
             {
-                if(mpLocalMapper->KeyframesInQueue()<3)
+                if(mpLocalMapper->KeyframesInQueue()<3){
+                    logger.log_str("If mpLocalMapper->KeyframesInQueue()<3, return true", {3});
                     return true;
-                else
+                }
+                else{
+                    logger.log_str("If mpLocalMapper->KeyframesInQueue()>=3, return false", {3});
                     return false;
+                }
             }
             else
                 return false;
@@ -3072,12 +3127,15 @@ bool Tracking::NeedNewKeyFrame()
 
 void Tracking::CreateNewKeyFrame()
 {
+    logger.log_loc("Tracking::CreateNewKeyFrame", {3});
+    logger.bp({3});
     if(mpLocalMapper->IsInitializing())
         return;
 
     if(!mpLocalMapper->SetNotStop(true))
         return;
 
+    logger.log_str("Create new KeyFrame (pKF)", {3});
     KeyFrame* pKF = new KeyFrame(mCurrentFrame,mpAtlas->GetCurrentMap(),mpKeyFrameDB);
 
     if(mpAtlas->isImuInitialized())
@@ -3103,6 +3161,7 @@ void Tracking::CreateNewKeyFrame()
 
     if(mSensor!=System::MONOCULAR && mSensor != System::IMU_MONOCULAR) // TODO check if incluide imu_stereo
     {
+        logger.log_str("If IMU Stereo, Update pose matrices", {3});
         mCurrentFrame.UpdatePoseMatrices();
         // cout << "create new MPs" << endl;
         // We sort points by the measured depth by the stereo/RGBD sensor.
@@ -3114,13 +3173,13 @@ void Tracking::CreateNewKeyFrame()
 
         vector<pair<float,int> > vDepthIdx;
         int N = (mCurrentFrame.Nleft != -1) ? mCurrentFrame.Nleft : mCurrentFrame.N;
-        vDepthIdx.reserve(mCurrentFrame.N);
+        vDepthIdx.reserve(mCurrentFrame.N); // Number of KeyPoints.
         for(int i=0; i<N; i++)
         {
             float z = mCurrentFrame.mvDepth[i];
             if(z>0)
             {
-                vDepthIdx.push_back(make_pair(z,i));
+                vDepthIdx.push_back(make_pair(z,i)); // ({float}z: depth, {int}i: index of keypoints)
             }
         }
 
@@ -3190,19 +3249,25 @@ void Tracking::CreateNewKeyFrame()
         }
     }
 
+    logger.log_str("mpLocalMapper->InsertKeyFrame(pKF)", {3});
+    mpLocalMapper->InsertKeyFrame(pKF); // mlNewKeyFrames.push_back(pKF); mbAbortBA=true;
 
-    mpLocalMapper->InsertKeyFrame(pKF);
-
-    mpLocalMapper->SetNotStop(false);
+    mpLocalMapper->SetNotStop(false); // mbNotStop = false;
 
     mnLastKeyFrameId = mCurrentFrame.mnId;
     mpLastKeyFrame = pKF;
     //cout  << "end creating new KF" << endl;
+    logger.log_loc("End of Tracking::CreateNewKeyFrame()", {3});
 }
 
 void Tracking::SearchLocalPoints()
 {
+    logger.log_loc("Tracking::SearchLocalPoints", {3});
+    logger.bp({3});
+
     // Do not search map points already matched
+    logger.log_str("Do not search map points already matched", {3});
+    logger.log_str("   : For all mvpMapPoints(pMP), (1) IncreaseVisible (2) set [mnLastFrameSeen] as [mCurrentFrame.mnId] (3) set [mbTrackInView, mbTrackInViewR] as [false, false]", {3});
     for(vector<MapPoint*>::iterator vit=mCurrentFrame.mvpMapPoints.begin(), vend=mCurrentFrame.mvpMapPoints.end(); vit!=vend; vit++)
     {
         MapPoint* pMP = *vit;
@@ -3214,7 +3279,7 @@ void Tracking::SearchLocalPoints()
             }
             else
             {
-                pMP->IncreaseVisible();
+                pMP->IncreaseVisible(); // mnVisible+=n;
                 pMP->mnLastFrameSeen = mCurrentFrame.mnId;
                 pMP->mbTrackInView = false;
                 pMP->mbTrackInViewR = false;
@@ -3225,6 +3290,10 @@ void Tracking::SearchLocalPoints()
     int nToMatch=0;
 
     // Project points in frame and check its visibility
+    logger.log_str("Project points in frame and check its visibility", {3});
+    logger.log_str("   > For all mvpLocalMapPoints(pMP),", {3});
+    logger.log_str("      > If mCurrentFrame.isInFrustum(pMP,0.5): pMP->IncreaseVisible()", {3});
+    logger.log_str("      > If pMP->mbTrackInView: add (mTrackProjX, mTrackProjY) into mmProjectPoints", {3});
     for(vector<MapPoint*>::iterator vit=mvpLocalMapPoints.begin(), vend=mvpLocalMapPoints.end(); vit!=vend; vit++)
     {
         MapPoint* pMP = *vit;
@@ -3236,7 +3305,7 @@ void Tracking::SearchLocalPoints()
         // Project (this fills MapPoint variables for matching)
         if(mCurrentFrame.isInFrustum(pMP,0.5))
         {
-            pMP->IncreaseVisible();
+            pMP->IncreaseVisible(); // pMP->mnVisible+=n;
             nToMatch++;
         }
         if(pMP->mbTrackInView)
@@ -3244,9 +3313,10 @@ void Tracking::SearchLocalPoints()
             mCurrentFrame.mmProjectPoints[pMP->mnId] = cv::Point2f(pMP->mTrackProjX, pMP->mTrackProjY);
         }
     }
-
+    
     if(nToMatch>0)
     {
+        logger.log_str("nToMatch="+to_string(nToMatch)+": Create ORB matcher matcher(0.8)", {3});
         ORBmatcher matcher(0.8);
         int th = 1;
         if(mSensor==System::RGBD)
@@ -3270,26 +3340,35 @@ void Tracking::SearchLocalPoints()
         if(mState==LOST || mState==RECENTLY_LOST) // Lost for less than 1 second
             th=15;
 
+        logger.log_str("Search by projection (mCurrentFrame, mvpLocalMapPoints) using th="+to_string(th), {3});
         int matches = matcher.SearchByProjection(mCurrentFrame, mvpLocalMapPoints, th, mpLocalMapper->mbFarPoints, mpLocalMapper->mThFarPoints);
     }
+    logger.log_loc("End of Tracking::SearchLocalPoints", {3});
 }
 
 void Tracking::UpdateLocalMap()
 {
+    logger.log_loc("Tracking::UpdateLocalMap()", {3});
+    logger.bp({3});
     // This is for visualization
     mpAtlas->SetReferenceMapPoints(mvpLocalMapPoints);
 
     // Update
+    logger.log_str(" 1) UpdateLocalKeyFrames 2) UpdateLocalPoints ", {3});
     UpdateLocalKeyFrames();
     UpdateLocalPoints();
 }
 
 void Tracking::UpdateLocalPoints()
 {
+    logger.log_loc("Tracking::UpdateLocalPoints", {3});
+    logger.bp({3});
     mvpLocalMapPoints.clear();
 
     int count_pts = 0;
 
+    logger.log_str("For all mvpLocalKeyFrames' keyframe, get map points matches (vpMPs) ", {3});
+    logger.log_str("   For all vpMPs(pMP), (1) push it into mvpLocalMapPoints (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId]", {3});
     for(vector<KeyFrame*>::const_reverse_iterator itKF=mvpLocalKeyFrames.rbegin(), itEndKF=mvpLocalKeyFrames.rend(); itKF!=itEndKF; ++itKF)
     {
         KeyFrame* pKF = *itKF;
@@ -3311,15 +3390,20 @@ void Tracking::UpdateLocalPoints()
             }
         }
     }
+    logger.log_loc("End of Tracking::UpdateLocalPoints", {3});
 }
 
 
 void Tracking::UpdateLocalKeyFrames()
 {
+    logger.log_loc("Tracking::UpdateLocalKeyFrames()", {3});
+    logger.bp({3});
     // Each map point vote for the keyframes in which it has been observed
     map<KeyFrame*,int> keyframeCounter;
     if(!mpAtlas->isImuInitialized() || (mCurrentFrame.mnId<mnLastRelocFrameId+2))
     {
+        logger.log_str("If IMU in Atlas is not initialized or current frame's ID is less than lastRelocFrameID+2", {3});
+        logger.log_str("   For all map points(" + to_string(mCurrentFrame.N) + ") in current frame, KeyframeCounter++", {3});
         for(int i=0; i<mCurrentFrame.N; i++)
         {
             MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
@@ -3333,6 +3417,7 @@ void Tracking::UpdateLocalKeyFrames()
                 }
                 else
                 {
+                    logger.log_str("   > Bad map points are detected! Set mvpMapPoints[i] as NULL.", {3});
                     mCurrentFrame.mvpMapPoints[i]=NULL;
                 }
             }
@@ -3340,6 +3425,8 @@ void Tracking::UpdateLocalKeyFrames()
     }
     else
     {
+        logger.log_str("If IMU in Atlas is initialized and current frame's ID is larger than lastRelocFrameID+1", {3});
+        logger.log_str("   For all map points(" + to_string(mLastFrame.N) + ") in last frame, KeyframeCounter++", {3});
         for(int i=0; i<mLastFrame.N; i++)
         {
             // Using lastframe since current frame has not matches yet
@@ -3362,7 +3449,7 @@ void Tracking::UpdateLocalKeyFrames()
         }
     }
 
-
+    logger.log_str("Clear mvpLocalKeyFrames & Reserve mvpLocalKeyFrames by 3 times keyframeCounter's size.", {3});
     int max=0;
     KeyFrame* pKFmax= static_cast<KeyFrame*>(NULL);
 
@@ -3370,6 +3457,8 @@ void Tracking::UpdateLocalKeyFrames()
     mvpLocalKeyFrames.reserve(3*keyframeCounter.size());
 
     // All keyframes that observe a map point are included in the local map. Also check which keyframe shares most points
+    logger.log_str("All keyframes that observe a map point are included in the local map. Also check which keyframe shares most points", {3});
+    logger.log_str("   : For all keyframeCounters (pKF), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] ", {3});
     for(map<KeyFrame*,int>::const_iterator it=keyframeCounter.begin(), itEnd=keyframeCounter.end(); it!=itEnd; it++)
     {
         KeyFrame* pKF = it->first;
@@ -3388,6 +3477,8 @@ void Tracking::UpdateLocalKeyFrames()
     }
 
     // Include also some not-already-included keyframes that are neighbors to already-included keyframes
+    logger.log_str("Include also some not-already-included keyframes that are neighbors to already-included keyframes", {3});
+    logger.log_str("   1. For all mvpLocalKeyFrames (pKF), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] ", {3});
     for(vector<KeyFrame*>::const_iterator itKF=mvpLocalKeyFrames.begin(), itEndKF=mvpLocalKeyFrames.end(); itKF!=itEndKF; itKF++)
     {
         // Limit the number of keyframes
@@ -3412,7 +3503,8 @@ void Tracking::UpdateLocalKeyFrames()
                 }
             }
         }
-
+        
+        logger.log_str("   2. For all pKF's childs (pChildKF), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] ", {3});
         const set<KeyFrame*> spChilds = pKF->GetChilds();
         for(set<KeyFrame*>::const_iterator sit=spChilds.begin(), send=spChilds.end(); sit!=send; sit++)
         {
@@ -3428,6 +3520,7 @@ void Tracking::UpdateLocalKeyFrames()
             }
         }
 
+        logger.log_str("   3. For all pKF's parent (pParent), (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] ", {3});
         KeyFrame* pParent = pKF->GetParent();
         if(pParent)
         {
@@ -3443,6 +3536,8 @@ void Tracking::UpdateLocalKeyFrames()
     // Add 10 last temporal KFs (mainly for IMU)
     if((mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO) &&mvpLocalKeyFrames.size()<80)
     {
+        logger.log_str("Add 10 last temporal KFs (mainly for IMU): if IMU is used && mvpLocalKeyFrames.size < 80", {3});
+        logger.log_str("   For previous frames up to the 20th of the current frame, (1) push it into mvpLocalKeyFrames (2) set [mnTrackReferenceForFrame] as [mCurrentFrame.mnId] ", {3});
         KeyFrame* tempKeyFrame = mCurrentFrame.mpLastKeyFrame;
 
         const int Nd = 20;
@@ -3460,9 +3555,12 @@ void Tracking::UpdateLocalKeyFrames()
 
     if(pKFmax)
     {
+        logger.log_str("Set [currentFrame's referenceKF] as [pKFmax]", {3});
         mpReferenceKF = pKFmax;
         mCurrentFrame.mpReferenceKF = mpReferenceKF;
     }
+
+    logger.log_loc("End of Tracking::UpdateLocalKeyFrames()", {3});
 }
 
 bool Tracking::Relocalization()
