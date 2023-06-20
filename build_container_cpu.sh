@@ -36,7 +36,7 @@ docker run -td --privileged --net=host --ipc=host \
     -e "XAUTHORITY=$XAUTH" \
     -e ROS_IP=127.0.0.1 \
     --cap-add=SYS_PTRACE \
-    -v `pwd`/Datasets:/Datasets \
+    -v /media/TrainDataset/Datasets:/Datasets \
     -v /etc/group:/etc/group:ro \
     -v `pwd`/ORB_SLAM3:/ORB_SLAM3 \
     jahaniam/orbslam3:ubuntu18_melodic_cpu bash

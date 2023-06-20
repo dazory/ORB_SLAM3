@@ -15,10 +15,18 @@ public:
     Logger(int iCur);// When its initialization the first map is created
     ~Logger(){};
     
+    void begin(const std::string strVal, std::list<int> targets);
+    void end(const std::string strVal, std::list<int> targets);
+    void only_from(const std::string strVal, std::list<int> targets);
+    void only(const std::string strVal, std::list<int> targets);
+    void only_to(const std::string strVal, std::list<int> targets);
+    
     void log_loc(const std::string strVal, std::list<int> targets);
     void bp(std::list<int> targets);
     void log_str(const std::string strVal, std::list<int> targets);
     int iCur = 3;
+    std::string prefix = "";
+    bool bOnly = false;
 
 protected:
 

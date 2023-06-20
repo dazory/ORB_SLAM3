@@ -52,9 +52,7 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpAtlas(pAtlas), mnLastRelocFrameId(0), time_recently_lost(5.0), time_recently_lost_visual(2.0),
     mnInitialFrameId(0), mbCreatedMap(false), mnFirstFrameId(0), mpCamera2(nullptr)
 {
-    // ORB_SLAM3::logger.log_loc("Tracking//Tracking()");
-    // ORB_SLAM3::logger.bp({3});
-    logger.log_loc("Tracking//Tracking()", {3});
+    logger.begin("Tracking//Tracking()", {3});
     logger.bp({3});
     // Load camera parameters from settings file
     cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
@@ -121,6 +119,8 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
 
     vnKeyFramesLM.clear();
     vnMapPointsLM.clear();
+
+    logger.end("Tracking//Tracking()", {3});
 }
 
 #ifdef REGISTER_TIMES
@@ -1662,7 +1662,7 @@ void Tracking::ComputeVelocitiesAccBias(const vector<Frame*> &vpFs, float &bax, 
 
 void Tracking::Track()
 {
-    logger.log_loc("Tracking::Track()", {3});
+    logger.begin("Tracking::Track()", {3});
     logger.bp({3});
     if (bStepByStep)
     {
@@ -2117,7 +2117,6 @@ void Tracking::Track()
 #ifdef REGISTER_TIMES
             std::chrono::steady_clock::time_point time_StartNewKF = std::chrono::steady_clock::now();
 #endif
-            logger.bp({3});
             bool bNeedKF = NeedNewKeyFrame();
 
 
@@ -2147,10 +2146,10 @@ void Tracking::Track()
         }
 
         logger.log_str("Reset if the camera get lost soon after initialization", {3});
-        logger.bp({3});
         // Reset if the camera get lost soon after initialization
         if(mState==LOST)
         {
+            logger.log_str("  > mState==LOST", {3});
             if(pCurrentMap->KeyFramesInMap()<=5)
             {
                 mpSystem->ResetActiveMap();
@@ -2200,7 +2199,7 @@ void Tracking::Track()
 
     }
 
-    logger.log_loc("End of Tracking::Track()", {3});
+    logger.end("Tracking::Track()", {3});
 }
 
 
@@ -2829,7 +2828,6 @@ bool Tracking::TrackWithMotionModel()
 bool Tracking::TrackLocalMap()
 {
     logger.log_loc("Tracking::TrackLocalMap", {3});
-    logger.bp({3});
     // We have an estimation of the camera pose and some map points tracked in the frame.
     // We retrieve the local map and try to find matches to points in the local map.
     mTrackedFr++;

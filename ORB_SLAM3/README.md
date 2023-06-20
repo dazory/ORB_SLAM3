@@ -42,12 +42,12 @@ If (IMU measured && enough acceleration): New map created with 513 points.
 
         3. Delete temporal MapPoints.
 
-    4. (If `bOK=true`) NeedNewKeyFrame()
+        4. (If `bOK=true`) NeedNewKeyFrame()
 
-        * (If `IMU` && `IMU.initialized` && timestemp interval <= 0.25): return false // => Not CreateNewKeyFrame; (초반에 여기를 3번정도 돎)
-        * (If `IMU` && `IMU.initialized` && timestemp interval >= 0.25): return true // => CreateNewKeyFrame; (이후에 여기로 들어옴)
+            * (If `IMU` && `IMU.initialized` && timestemp interval <= 0.25): return false // => Not CreateNewKeyFrame; (초반에 여기를 3번정도 돎)
+            * (If `IMU` && `IMU.initialized` && timestemp interval >= 0.25): return true // => CreateNewKeyFrame; (이후에 여기로 들어옴)
 
-    5. (If `NeedNewKeyFrame` && bOK) CreateNewKeyFrame()
+    4. (If `NeedNewKeyFrame` && bOK) CreateNewKeyFrame()
 
         * (If `Stereo` && ) Update pose matrices: `mCurrentFrame.UpdatePoseMatrices();`
 
@@ -89,8 +89,72 @@ If (IMU measured && enough acceleration): New map created with 513 points.
             * `mlFrameTimes` <- `mlFrameTimes.back()`
             * `mlbLost` <- `mState==LOST`
 
-    9. 
 
+2. `LocalMapping::Run()`
 
+    Repeat below:
 
-  
+    1. Tracking will see that Local Mapping is busy: `mbAcceptKeyFrames=false`;
+
+    2. (If `CheckNewKeyFrames()` && `!mbBadImu`)
+
+        1. BoW conversion and insertion in Map: `ProcessNewKeyFrame()`
+
+            1. Compute Bags of Words structures: ComputeBoW()
+
+                : `mpORBvocabulary->transform(vCurrentDesc,mBowVec,mFeatVec,4)`
+            2. For all vpMapPointMatches(pMP),
+                
+                * AddObservation(mpCurrentKeyFrame, i): `mbObservations`에 `mpCurrentKeyFrame을 저장
+                * UpdateNormalAndDepth(): keyframes로부터 normal과 depth를 계산하여 `mNormalVector`와 `mfMinDistance`&`mfMaxDistance`에 저장.
+
+                    * For all mObservations (pKF, indexes), compute `normal` using mWorldPos and camera pose.
+                    * Get level from Keyframes.octave
+                    * Compute `mfMinDistance` and `mfMaxDistance` using dist and level.
+                    * Compute `mNormalVector`=normal / num_observations.
+
+                * ComputeDistinctiveDescriptors(): 
+
+                    * For all mObservations (pKF, indexes), Push back pKF->mDescriptors into `vDescriptors`.
+                    * For all vDescriptors, Compute `Distances`.
+                    * Take the descriptors with least median distance to the reset: `mDescriptor=vDescriptors[BestIdx].clone()`.
+            3. Update links in the Covisibility graph: `mpCurrentKeyFrame->UpdateConnections()`.
+
+                * For all mvpMapPoints(pMP), KFcounter++ as much it has good observations.
+                * For all KFcounter(KF, index), 
+                    * Update `nmax`: the max of index.
+                    * Update `pKFmax`: the keyframe with max index.
+                    * Push back (KF, index) into `vPairs` and Add connection between them if index >= th.
+                * For all vPairs(KF, index), lKFs.push_fron(index) & lWs.push_front(KF).
+                * Update member variables:
+                    * `mConnectedKeyFrameWeights`=KFCounter
+                    * `mvpOrderedConnectedKeyFrames`=lKFs
+                    * `mvOrderedWeights`=lWs
+                    * If first connection, `mpParent`=mvpOrderedConnectedKeyFrames.front() & add child(this) & `mbFirstConnection`=false.
+
+            4. Insert Keyframe in Map: `mpAtlas->AddKeyFrame(mpCurrentKeyFrame)`.
+
+        2. Check recent MapPoints: `MapPointCulling()`
+
+        3. Triangulate new MapPoints: `CreateNewMapPoints()`
+
+        4. (If `!CheckNewKeyFrames()`) Find more matches in neighbor keyframes and fuse point duplications: `SearchInNeighbors()`; `num_FixedKF_BA, num_OptKF_BA, num_MPs_BA, num_edges_BA = 0`
+
+        5. (If `!CheckNewKeyFrames()` && `!stopRequested()`)
+
+            * (If `mpAtlas->KeyFramesInMap()>2`) BundleAdjustment; `b_doneLBA=true`
+                * mTinit += mpCurrentKeyFrame->mTimeStamp - mpCurrentKeyFrame->mPrevKF->mTimeStamp;
+            * (If `b_doneLBA`) push back
+                * `vnLBA_edges` <- `num_edges_BA`
+                * `vnLBA_KFopt` <- `num_OptKF_BA`
+                * `vnLBA_KFfixed` <- `num_FixedKF_BA`
+                * `vnLBA_MPs` <- `num_MPs_BA`
+            * (If `!IMU.initialized` && `mbInertial`) InitializeImu
+
+            * Check redundant local keyframes: `KeyFrameCulling()`
+
+            * (If `mTinit<100.0f` && `mbInertial` && `IMU.initialized` && `Tracking::OK`) 
+
+                * Get InertialBA and initialize IMU
+                * (If `mpAtlas->KeyFramesInMap())<=100` && `mTinit...`) ScaleRefinement()
+3. 

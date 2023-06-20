@@ -24,6 +24,8 @@
 #include "Converter.h"
 #include "Config.h"
 
+#include <Logger.h>
+
 #include<mutex>
 #include<chrono>
 
@@ -63,18 +65,22 @@ void LocalMapping::SetTracker(Tracking *pTracker)
 
 void LocalMapping::Run()
 {
+    logger.begin("LocalMapping::Run()", {3});
+    logger.bp({3});
 
     mbFinished = false;
 
     while(1)
     {
         // Tracking will see that Local Mapping is busy
-        SetAcceptKeyFrames(false);
+        logger.only_from("Tracking will see that Local Mapping is busy", {3});
+        SetAcceptKeyFrames(false); // mbAcceptKeyFrames=false;
 
         // Check if there are keyframes in the queue
-        if(CheckNewKeyFrames() && !mbBadImu)
+        logger.only("Check if there are keyframes in the queue", {3});
+        if(CheckNewKeyFrames() && !mbBadImu) // !mlNewKeyFrames.empty()
         {
-
+            logger.log_str("mlNewKeyFrames is not empty && IMU is not bad", {3});
 #ifdef REGISTER_TIMES
             double timeLBA_ms = 0;
             double timeKFCulling_ms = 0;
@@ -82,6 +88,7 @@ void LocalMapping::Run()
             std::chrono::steady_clock::time_point time_StartProcessKF = std::chrono::steady_clock::now();
 #endif
             // BoW conversion and insertion in Map
+            logger.log_str("BoW conversion and insertion in Map: ProcessNewKeyFrame", {3});
             ProcessNewKeyFrame();
 #ifdef REGISTER_TIMES
             std::chrono::steady_clock::time_point time_EndProcessKF = std::chrono::steady_clock::now();
@@ -198,7 +205,7 @@ void LocalMapping::Run()
                 vdKFCullingSync_ms.push_back(timeKFCulling_ms);
 #endif
 
-                if ((mTinit<100.0f) && mbInertial)
+                if ((mTinit<100.0f) && mbInertial) // dshong: What means?
                 {
                     if(mpCurrentKeyFrame->GetMap()->isImuInitialized() && mpTracker->mState==Tracking::OK)
                     {
@@ -284,6 +291,8 @@ void LocalMapping::Run()
     }
 
     SetFinish();
+
+    logger.end("LocalMapping::Run()", {3});
 }
 
 void LocalMapping::InsertKeyFrame(KeyFrame *pKF)
@@ -302,6 +311,7 @@ bool LocalMapping::CheckNewKeyFrames()
 
 void LocalMapping::ProcessNewKeyFrame()
 {
+    logger.begin("LocalMapping::ProcessNewKeyFrame()", {3});
     {
         unique_lock<mutex> lock(mMutexNewKFs);
         mpCurrentKeyFrame = mlNewKeyFrames.front();
@@ -309,11 +319,14 @@ void LocalMapping::ProcessNewKeyFrame()
     }
 
     // Compute Bags of Words structures
-    mpCurrentKeyFrame->ComputeBoW();
+    logger.log_str("Compute Bags of Words structures", {3});
+    mpCurrentKeyFrame->ComputeBoW(); // dshong: Where?
 
     // Associate MapPoints to the new keyframe and update normal and descriptor
+    logger.log_str("Associate MapPoints to the new keyframe and update normal and descriptor", {3});
     const vector<MapPoint*> vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();
 
+    logger.log_str("For all vpMapPointMatches(pMP), (1) AddObservation(mpCurrentKeyFrame), (2) UpdateNormalAndDepth (3) ComputeDistinctiveDescriptors", {3});
     for(size_t i=0; i<vpMapPointMatches.size(); i++)
     {
         MapPoint* pMP = vpMapPointMatches[i];
@@ -339,7 +352,9 @@ void LocalMapping::ProcessNewKeyFrame()
     mpCurrentKeyFrame->UpdateConnections();
 
     // Insert Keyframe in Map
-    mpAtlas->AddKeyFrame(mpCurrentKeyFrame);
+    mpAtlas->AddKeyFrame(mpCurrentKeyFrame); // mpCurrentKeyFrame->GetMap()->AddKeyFrame(mpCurrentKeyFrame)
+
+    logger.end("LocalMapping::ProcessNewKeyFrame()", {3});
 }
 
 void LocalMapping::EmptyQueue()
