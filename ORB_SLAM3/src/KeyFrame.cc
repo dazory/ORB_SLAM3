@@ -463,7 +463,7 @@ void KeyFrame::UpdateConnections(bool upParent)
         if(mit->second>=th)
         {
             vPairs.push_back(make_pair(mit->second,mit->first));
-            (mit->first)->AddConnection(this,mit->second);
+            (mit->first)->AddConnection(this,mit->second); // curr->mit쪽으로 connection했으니 mit->curr쪽으로도.
         }
     }
 
@@ -491,7 +491,7 @@ void KeyFrame::UpdateConnections(bool upParent)
 
         if(mbFirstConnection && mnId!=mpMap->GetInitKFid())
         {
-            mpParent = mvpOrderedConnectedKeyFrames.front();
+            mpParent = mvpOrderedConnectedKeyFrames.front(); // keyframe 중 젤 괘낞은 애가 parent.
             mpParent->AddChild(this);
             mbFirstConnection = false;
         }
