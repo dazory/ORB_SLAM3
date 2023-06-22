@@ -74,7 +74,7 @@ void LocalMapping::Run()
     {
         // Tracking will see that Local Mapping is busy
         logger.only_from("Tracking will see that Local Mapping is busy", {3});
-        SetAcceptKeyFrames(false); // mbAcceptKeyFrames=false;
+        SetAcceptKeyFrames(false); // mbAcceptKeyFrames=false; // 나 바쁠땐 건들지 마.
 
         // Check if there are keyframes in the queue
         logger.only("Check if there are keyframes in the queue", {3});
@@ -349,7 +349,7 @@ void LocalMapping::ProcessNewKeyFrame()
     }
 
     // Update links in the Covisibility Graph
-    mpCurrentKeyFrame->UpdateConnections();
+    mpCurrentKeyFrame->UpdateConnections(); // 이게 covisibiltiy graph에 추가하는 거임.
 
     // Insert Keyframe in Map
     mpAtlas->AddKeyFrame(mpCurrentKeyFrame); // mpCurrentKeyFrame->GetMap()->AddKeyFrame(mpCurrentKeyFrame)

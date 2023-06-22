@@ -3195,7 +3195,7 @@ void Tracking::CreateNewKeyFrame()
                 MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
                 if(!pMP)
                     bCreateNew = true;
-                else if(pMP->Observations()<1)
+                else if(pMP->Observations()<1) // observation==0 means 지금껏 이 point를 본 애가 없었음
                 {
                     bCreateNew = true;
                     mCurrentFrame.mvpMapPoints[i] = static_cast<MapPoint*>(NULL);
@@ -3223,8 +3223,10 @@ void Tracking::CreateNewKeyFrame()
                         pKF->AddMapPoint(pNewMP,mCurrentFrame.Nleft + mCurrentFrame.mvLeftToRightMatch[i]);
                     }
 
+                    // keyframe만듦 (여까지가 tracking이었던듯?) -> 그것의 map points를 global map에 등록(mapping)
+                    // 지금 이게 새로 만들어진 map을 atlas에 추가한거임
                     pKF->AddMapPoint(pNewMP,i);
-                    pNewMP->ComputeDistinctiveDescriptors();
+                    pNewMP->ComputeDistinctiveDescriptors(); // 동일한 mappoint 보는 애들 많잖아. 그것들로부터 median으로 가장 괜찮은 descriptor를 계산.
                     pNewMP->UpdateNormalAndDepth();
                     mpAtlas->AddMapPoint(pNewMP);
 
@@ -3247,7 +3249,7 @@ void Tracking::CreateNewKeyFrame()
         }
     }
 
-    logger.log_str("mpLocalMapper->InsertKeyFrame(pKF)", {3});
+    logger.log_str("mpLocalMapper->InsertKeyFrame(pKF)", {3}); // 다른 mpLocalMapper thread에 keyframe 넣어줌.
     mpLocalMapper->InsertKeyFrame(pKF); // mlNewKeyFrames.push_back(pKF); mbAbortBA=true;
 
     mpLocalMapper->SetNotStop(false); // mbNotStop = false;
@@ -3332,7 +3334,7 @@ void Tracking::SearchLocalPoints()
         }
 
         // If the camera has been relocalised recently, perform a coarser search
-        if(mCurrentFrame.mnId<mnLastRelocFrameId+2)
+        if(mCurrentFrame.mnId<mnLastRelocFrameId+2) // relocalization한지 얼마 안됐으니까(바로 다음 frame이니까) 좀 더 강인하게 radius를 설정.
             th=5;
 
         if(mState==LOST || mState==RECENTLY_LOST) // Lost for less than 1 second

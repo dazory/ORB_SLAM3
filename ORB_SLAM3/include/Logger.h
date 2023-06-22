@@ -24,7 +24,7 @@ public:
     void log_loc(const std::string strVal, std::list<int> targets);
     void bp(std::list<int> targets);
     void log_str(const std::string strVal, std::list<int> targets);
-    int iCur = 3;
+    int iCur = -1;
     std::string prefix = "";
     bool bOnly = false;
 
