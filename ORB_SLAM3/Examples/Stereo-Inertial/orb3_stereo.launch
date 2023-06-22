@@ -1,0 +1,6 @@
+<launch>
+    <remap from="/camera/left/image_raw" to="/camera/infra1/image_rect_raw"/>
+    <remap from="/camera/right/image_raw" to="/camera/infra2/image_rect_raw"/>
+    <remap from="/imu" to="/camera/imu"/>
+    <node name="orb3_stereo" pkg="ORB_SLAM3"  type="Stereo_Inertial" args="/ORB_SLAM3/Vocabulary/ORBvoc.txt /ORB_SLAM3/Examples/Stereo-Inertial/realsense_d435i.yaml true" output="screen" />
+</launch>

@@ -1,0 +1,2 @@
+realsense-ros/realsense2_camera:realsense-ros/realsense2_description
+-DCATKIN_DEVEL_PREFIX=/catkin_ws_d435i/devel -DCMAKE_INSTALL_PREFIX=/catkin_ws_d435i/install -G Unix Makefiles
